@@ -1,0 +1,20 @@
+id: peh:MatrixOntology
+matrix_subclasses:
+- id: peh:Water
+  label: "Water"
+  description: "A simple molecule consisting of hydrogen and oxygen."
+  subClassOf: peh:Matrix
+  translations:
+  - language: nl
+    property_name: label
+    translated_value: water
+
+- id: peh:Ethanol
+  label: "Ethanol"
+  description: "A common solvent and alcohol."
+  subClassOf: peh:Matrix
+
+- id: peh:Glucose
+  label: "Glucose"
+  description: "A simple sugar used as an energy source."
+  subClassOf: peh:Matrix

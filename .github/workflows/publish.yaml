@@ -1,0 +1,43 @@
+name: Publish nanopublications
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - "*"            # any tag triggers dry-run
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Set publish mode
+        id: mode
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "dryrun=" >> $GITHUB_OUTPUT
+            echo "MODE=REAL PUBLISH"
+          else
+            echo "dryrun=--dry-run" >> $GITHUB_OUTPUT
+            echo "MODE=DRY RUN"
+          fi
+
+      - name: Publish nanopublications
+        run: |
+          uv run pubmate-publish \
+            --assertion-folder unpublished \
+            --private-key "${{ secrets.NANOPUB_PRIVATE_KEY }}" \
+            --public-key "${{ secrets.NANOPUB_PUBLIC_KEY }}" \
+            --intro-nanopub-uri "${{ secrets.INTRO_NANOPUB_URI }}" \
+            ${{ steps.mode.outputs.dryrun }}

@@ -1,0 +1,39 @@
+name: Generate unpublished assertions
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "dropbox/**"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v7
+
+      - run: uv sync
+
+      - name: Run serialize pipeline
+        run: make serialize
+
+      - name: Move processed dropbox files to archive
+        run: |
+          git mv dropbox/*.yaml archive/.
+
+      - name: Commit generated assertions
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          git add unpublished/
+          git commit -m "Generate unpublished term assertions and clear dropbox" || echo "No changes"
+          git push

@@ -1,0 +1,107 @@
+id: https://w3id.org/peh/terms
+name: PEH-Ontology
+prefixes:
+  rdf: http://www.w3.org/1999/02/22-rdf-syntax-ns#
+  owl: http://www.w3.org/2002/07/owl#
+  xsd: http://www.w3.org/2001/XMLSchema#
+  linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
+  peh: http://w3id.org/peh/terms/
+  rdfs: http://www.w3.org/2000/01/rdf-schema#
+  dcterms: http://purl.org/dc/terms/ 
+default_prefix: peh
+
+imports:
+  - linkml:types
+emit_prefixes:
+  - rdf
+  - owl
+  - linkml
+  - schema
+  - rdfs
+  - peh
+  - xsd
+  - dcterms
+
+classes:
+  Container:
+    class_uri: owl:Ontology
+    tree_root: true
+    slots:
+      - id
+      - matrix_subclasses
+
+  HasTranslations:
+    description: >-
+      The capacity of including a list of translated terms for one or more entity properties and languages
+    mixin: true
+    slots:
+      - translations
+
+  Translation:
+    description: >-
+      A translation for any of the entity properties, defining the property, the language and the translated term
+    slots:
+      - property_name
+      - language
+      - translated_value
+
+  Matrix:
+    class_uri: peh:Matrix
+    description: >
+      Root class for biochemical entities. All vocabulary terms will be subclasses of this.
+    slots:
+      - label
+      - id
+      - description
+
+  MatrixSubClass:
+    class_uri: owl:Class
+    mixins:
+      - HasTranslations
+    description: >
+      Template class used to generate OWL Classes.
+    slots:
+      - label
+      - id
+      - description
+      - subClassOf
+
+slots:
+  id:
+    identifier: True
+    range: uriorcurie
+
+  label:
+    slot_uri: rdfs:label
+    annotations:
+      owl: AnnotationAssertion
+    range: string
+
+  description:
+    slot_uri: http://purl.org/dc/terms/description
+    range: string
+
+  subClassOf:
+    annotations:
+      owl: subClassOf
+    slot_uri: rdfs:subClassOf
+    range: Matrix
+
+  matrix_subclasses:
+    range: MatrixSubClass
+    inlined_as_list: true
+    multivalued: true
+
+  translations:
+    range: Translation
+    inlined_as_list: true
+    multivalued: true
+  property_name:
+    range: string
+  language:
+    range: string
+  translated_value:
+    range: string
+
+  
