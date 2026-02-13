@@ -22,8 +22,8 @@ jobs:
 
       - run: uv sync
 
-      - name: Run serialize pipeline
-        run: make serialize
+      - name: Run pipeline
+        run: make pipeline
 
       - name: Move processed dropbox files to archive
         run: |
