@@ -7,17 +7,21 @@ UNPUBLISHED_FOLDER=unpublished
 ARCHIVE_FOLDER=archive
 COMBINED_DATA=$(OUT_FOLDER)/combined.yaml
 
+.PHONY: prepare aggregate mint build pipeline print-data graph2assertions
+
 print-data:
 	@echo $(DATA_FILES)
 
 prepare:
-	kdir -p $(OUT_FOLDER)
+	mkdir -p $(OUT_FOLDER)
 	mkdir -p $(UNPUBLISHED_FOLDER)
 	mkdir -p $(ARCHIVE_FOLDER)
 
 aggregate:
-	yq eval-all '. as $$item ireduce ({}; . * $$item )' \
-		$(DATA_FILES) > $(COMBINED_DATA)
+	uv run python concat.py \
+		--target matrix_subclasses \
+		$(COMBINED_DATA) \
+		$(DATA_FILES)
 
 mint: aggregate
 	uv run pubmate-mint \
@@ -29,13 +33,17 @@ mint: aggregate
 		--preflabel label \
 		$(DRY)
 
-build:
+build: $(OUT_FOLDER)/$(ONTOLOGY_LABEL)
+
+$(OUT_FOLDER)/$(ONTOLOGY_LABEL): $(COMBINED_DATA)
+	echo "Building $(ONTOLOGY_LABEL)"
 	uv run linkml-convert \
 		--target-class Container \
 		-s $(SCHEMA) \
 		-o $(OUT_FOLDER)/$(ONTOLOGY_LABEL) \
 		$(COMBINED_DATA)
-
+	echo "Build completed successfully for $(ONTOLOGY_LABEL)"
+ 
 graph2assertions: | $(UNPUBLISHED_FOLDER)
 	uv run pubmate-cleanrdf \
 		--input-ontology-path $(OUT_FOLDER)/$(ONTOLOGY_LABEL) \
@@ -45,3 +53,6 @@ graph2assertions: | $(UNPUBLISHED_FOLDER)
 
 pipeline: prepare mint build graph2assertions
 
+clean:
+	rm $(OUT_FOLDER)/*
+	rm $(UNPUBLISHED_FOLDER)/*.ttl
