@@ -17,8 +17,11 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Run pipeline (NO COMMIT)
+      - name: Run pipeline
         run: make pipeline DRY="--dry-run"
 
-      - name: Ensure repo unchanged
-        run: git diff --exit-code
+      - name: Validate expected processing effects
+        run: |
+          test -z "$(ls -A dropbox)" || (echo "Expected dropbox to be empty after processing" && exit 1)
+          test -n "$(ls -A archive)" || (echo "Expected archive to contain processed YAML files" && exit 1)
+          test -n "$(ls -A unpublished)" || (echo "Expected unpublished to contain generated assertions" && exit 1)

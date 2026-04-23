@@ -13,3 +13,6 @@ uv.lock
 
 #_temp
 _temp/
+
+#VSCode
+.codex

@@ -5,10 +5,20 @@ on:
     types: [published]
   push:
     tags:
-      - "*"            # any tag triggers dry-run
+      - "*" # any tag triggers dry-run
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Publish mode"
+        required: true
+        default: "dry-run"
+        type: choice
+        options:
+          - dry-run
+          - publish
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   publish:
@@ -16,6 +26,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - uses: astral-sh/setup-uv@v7
 
@@ -27,17 +39,32 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "release" ]]; then
             echo "dryrun=" >> $GITHUB_OUTPUT
-            echo "MODE=REAL PUBLISH"
+            echo "mode_label=release-publish" >> $GITHUB_OUTPUT
+            echo "commit_move=false" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.mode }}" == "publish" ]]; then
+            echo "dryrun=" >> $GITHUB_OUTPUT
+            echo "mode_label=manual-publish" >> $GITHUB_OUTPUT
+            echo "commit_move=true" >> $GITHUB_OUTPUT
           else
             echo "dryrun=--dry-run" >> $GITHUB_OUTPUT
-            echo "MODE=DRY RUN"
+            echo "mode_label=dry-run" >> $GITHUB_OUTPUT
+            echo "commit_move=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Publish nanopublications
+      - name: Publish nanopublications and update repository folders
+        env:
+          NANOPUB_PRIVATE_KEY: ${{ secrets.NANOPUB_PRIVATE_KEY }}
+          NANOPUB_PUBLIC_KEY: ${{ secrets.NANOPUB_PUBLIC_KEY }}
+          INTRO_NANOPUB_URI: ${{ secrets.INTRO_NANOPUB_URI }}
         run: |
-          uv run pubmate-publish \
-            --assertion-folder unpublished \
-            --private-key "${{ secrets.NANOPUB_PRIVATE_KEY }}" \
-            --public-key "${{ secrets.NANOPUB_PUBLIC_KEY }}" \
-            --intro-nanopub-uri "${{ secrets.INTRO_NANOPUB_URI }}" \
-            ${{ steps.mode.outputs.dryrun }}
+          make publish-pipeline DRY="${{ steps.mode.outputs.dryrun }}"
+
+      - name: Commit published move (manual real publish only)
+        if: steps.mode.outputs.commit_move == 'true'
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          git add -A unpublished published
+          git commit -m "Move published assertions from unpublished/ to published/" || echo "No changes to commit"
+          git push || echo "No changes to push"
